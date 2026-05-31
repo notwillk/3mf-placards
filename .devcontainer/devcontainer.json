@@ -6,11 +6,10 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/common-utils:2": {},
-    "ghcr.io/notwillk/devcontainer-features/openscad-cli:1": {},
-    "ghcr.io/fjktkm/devcontainer-features/agent-persistence:1": {}
+    "ghcr.io/notwillk/devcontainer-features/openscad-cli:1": {}
   },
   "containerEnv": {
-    "PATH": "${containerWorkspaceFolder}/tools/bin:${containerEnv:PATH}"
+    "PATH": "${containerWorkspaceFolder}/tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   },
   "customizations": {
     "vscode": {
