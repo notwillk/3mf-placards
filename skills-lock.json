@@ -1,11 +1,17 @@
 {
+  "version": 1,
   "skills": {
-    "checksy-workflow": {
-      "upstream": {
-        "repository": "https://github.com/notwillk/checksy",
-        "sourcePath": "skills/checksy-workflow",
-        "commit": "e85246b1bc71543200765e56b91da36d0ff9a3b1"
-      }
+    "openscad": {
+      "source": "mitsuhiko/agent-stuff",
+      "sourceType": "github",
+      "skillPath": "skills/openscad/SKILL.md",
+      "computedHash": "12854481b74e734467be4de74ba11d360ca049b5de7c8dab7918c10ae3a20aa0"
+    },
+    "openscad-iterative-modeling": {
+      "source": "fboldo/openscad-mcp-server",
+      "sourceType": "github",
+      "skillPath": "skills/openscad-iterative-modeling/SKILL.md",
+      "computedHash": "da2f171f32e87e871d34df335a48151fdd3a0cddc0a67336a6c99ec5d866cd78"
     }
   }
 }
