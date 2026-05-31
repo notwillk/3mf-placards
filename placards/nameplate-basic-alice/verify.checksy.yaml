@@ -1,0 +1,5 @@
+rules:
+  - name: build placard sample
+    check: ./scripts/build.sh && grep -q 'Alice' dist/placard.txt
+  - name: package placard sample
+    check: ./scripts/package.sh && test -f dist/placard.tgz

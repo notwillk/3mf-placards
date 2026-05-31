@@ -1,0 +1,11 @@
+$schema: "https://moonrepo.dev/schemas/workspace.json"
+
+projects:
+  globs:
+    - "models/*/moon.yml"
+    - "placards/*/moon.yml"
+    - "tools/*/moon.yml"
+
+vcs:
+  manager: "git"
+  defaultBranch: "main"

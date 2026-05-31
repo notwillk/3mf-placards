@@ -1,0 +1,18 @@
+$schema: "https://moonrepo.dev/schemas/tasks.json"
+
+tasks:
+  format:
+    command: "moon"
+    args: ["run", "*:format"]
+  check:
+    command: "moon"
+    args: ["run", "*:check"]
+  build:
+    command: "moon"
+    args: ["run", "*:build"]
+  verify:
+    command: "moon"
+    args: ["run", "*:verify"]
+  package:
+    command: "moon"
+    args: ["run", "*:package"]
