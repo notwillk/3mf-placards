@@ -1,0 +1,11 @@
+{
+  "skills": {
+    "checksy-workflow": {
+      "upstream": {
+        "repository": "https://github.com/notwillk/checksy",
+        "sourcePath": "skills/checksy-workflow",
+        "commit": "e85246b1bc71543200765e56b91da36d0ff9a3b1"
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+rules:
+  - name: monorepo layout exists
+    check: test -d models && test -d placards && test -d tools
+  - name: moon workspace config exists
+    check: test -f .moon/workspace.yml && test -f .moon/tasks.yml
+  - name: checksy workflow skill is vendored
+    check: test -f .agents/skills/checksy-workflow/SKILL.md
