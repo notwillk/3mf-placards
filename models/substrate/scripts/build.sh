@@ -3,10 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-WORKSPACE_DIR="$(cd "$PROJECT_DIR/../.." && pwd)"
 
 "$SCRIPT_DIR/build.py" \
 	--values "$PROJECT_DIR/sample-values.yaml" \
 	--model "$PROJECT_DIR/model.scad" \
-	--substrate-model "$WORKSPACE_DIR/models/substrate/model.scad" \
 	--out-dir "$PROJECT_DIR/dist"

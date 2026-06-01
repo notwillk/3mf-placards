@@ -8,4 +8,13 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 mkdir -p "$PROJECT_DIR/dist"
 cd "$PROJECT_DIR/dist"
 rm -f model.tgz
-tar -czf model.tgz model.scad placard.scad placard.stl
+tar -czf model.tgz \
+	model.scad \
+	substrate.scad \
+	placard.scad \
+	title-description.scad \
+	substrate-cut.scad \
+	placard.stl \
+	title-description.stl \
+	substrate-cut.stl \
+	placard.3mf

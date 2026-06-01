@@ -7,14 +7,5 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 "$SCRIPT_DIR/build.sh"
 mkdir -p "$PROJECT_DIR/dist"
 cd "$PROJECT_DIR/dist"
-rm -f placard.tgz
-tar -czf placard.tgz \
-	model.scad \
-	substrate.scad \
-	placard.scad \
-	title-description.scad \
-	substrate-cut.scad \
-	placard.stl \
-	title-description.stl \
-	substrate-cut.stl \
-	placard.3mf
+rm -f model.tgz
+tar -czf model.tgz model.scad substrate.scad substrate.stl

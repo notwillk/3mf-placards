@@ -1,7 +1,61 @@
 rules:
   - name: build lorem ipsum placard
-    check: ./scripts/build.sh && test -f dist/placard.scad && test -s dist/placard.stl
+    check: ./scripts/build.sh && test -f dist/substrate.scad && test -f dist/placard.scad && test -f dist/title-description.scad && test -f dist/substrate-cut.scad && test -s dist/placard.stl && test -s dist/title-description.stl && test -s dist/substrate-cut.stl && test -s dist/placard.3mf
   - name: generated scad contains lorem ipsum values
-    check: grep -q 'title = "Lorem Ipsum"' dist/placard.scad && grep -q 'description = ""' dist/placard.scad
+    check: grep -q 'title = "Lorem Ipsum"' dist/placard.scad && grep -q 'title_alignment = "left"' dist/placard.scad && grep -q 'title_block_height_factor = 1.25' dist/placard.scad && grep -q 'description_line_height = 1.25' dist/placard.scad && grep -q 'description_line_spacing = 5' dist/placard.scad && grep -q 'description_alignment = "left"' dist/placard.scad && grep -Fq 'description_lines = ["Dolor sit amet,", "consectetur."]' dist/placard.scad && grep -q 'text_color = "#000000"' dist/placard.scad && grep -q 'substrate_color = "#FFFFFF"' dist/placard.scad && grep -q 'placard_title_description_body(' dist/title-description.scad && grep -q 'placard_substrate_cut(' dist/substrate-cut.scad && ! grep -q 'placard_title_description_features(' dist/title-description.scad && ! grep -q 'title_scale' dist/placard.scad
+  - name: generated 3mf contains default black text and white substrate
+    check: |
+      python3 - <<'PY'
+      import zipfile
+      import xml.etree.ElementTree as ET
+
+      core = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
+      material = "http://schemas.microsoft.com/3dmanufacturing/material/2015/02"
+      ns = {"c": core, "m": material}
+
+      with zipfile.ZipFile("dist/placard.3mf") as archive:
+          root = ET.fromstring(archive.read("3D/3dmodel.model"))
+
+      objects = root.findall(".//c:object", ns)
+      assert root.get("recommendedextensions") == "m"
+      assert not root.findall(".//m:basematerials", ns)
+      assert not root.findall(".//c:basematerials", ns)
+      assert [item.get("name") for item in objects] == ["title-description", "substrate"]
+      assert [item.get("pid") for item in objects] == ["1", "1"]
+      assert [item.get("pindex") for item in objects] == ["0", "1"]
+      assert [color.get("color") for color in root.findall(".//m:color", ns)] == [
+          "#000000",
+          "#FFFFFF",
+      ]
+      assert [item.get("objectid") for item in root.findall(".//c:build/c:item", ns)] == [
+          "2",
+          "3",
+      ]
+      assert all(item.findall(".//c:triangle", ns) for item in objects)
+
+      by_name = {item.get("name"): item for item in objects}
+
+      def assert_triangle_color(item, color_index):
+          triangles = item.findall(".//c:triangle", ns)
+          assert triangles
+          assert all(triangle.get("pid") == "1" for triangle in triangles)
+          assert all(triangle.get("p1") == color_index for triangle in triangles)
+
+      def z_bounds(item):
+          values = [float(vertex.get("z")) for vertex in item.findall(".//c:vertex", ns)]
+          return min(values), max(values)
+
+      def assert_close(actual, expected):
+          assert abs(actual - expected) <= 0.001, (actual, expected)
+
+      text_min, text_max = z_bounds(by_name["title-description"])
+      substrate_min, substrate_max = z_bounds(by_name["substrate"])
+      assert_triangle_color(by_name["title-description"], "0")
+      assert_triangle_color(by_name["substrate"], "1")
+      assert_close(text_min, 0)
+      assert_close(text_max, 2)
+      assert_close(substrate_min, 0.4)
+      assert_close(substrate_max, 2)
+      PY
   - name: package lorem ipsum placard
     check: ./scripts/package.sh && test -f dist/placard.tgz

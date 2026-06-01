@@ -1,0 +1,5 @@
+width: 75
+aspect_ratio: 2
+thickness: 2
+border_radius: 5
+orientation: "landscape"

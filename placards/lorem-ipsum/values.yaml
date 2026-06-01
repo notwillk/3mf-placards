@@ -1,8 +1,20 @@
 title: "Lorem Ipsum"
-description: ""
+description: "Dolor sit amet, consectetur."
 width: 75
 aspect_ratio: 2
 thickness: 2
+backing_thickness: 0.4
 border_thickness: 2
 border_radius: 5
 orientation: "landscape"
+padding: 2
+gap: 1
+title_typeface: ""
+title_size: 6
+title_alignment: "left"
+description_typeface: ""
+description_size: 4
+description_line_height: 1.25
+description_alignment: "left"
+text_color: "#000000"
+substrate_color: "#FFFFFF"

@@ -9,4 +9,5 @@ MODEL_DIR="$WORKSPACE_DIR/models/placard-title-description"
 "$MODEL_DIR/scripts/build.py" \
 	--values "$PROJECT_DIR/values.yaml" \
 	--model "$MODEL_DIR/model.scad" \
+	--substrate-model "$WORKSPACE_DIR/models/substrate/model.scad" \
 	--out-dir "$PROJECT_DIR/dist"

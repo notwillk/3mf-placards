@@ -7,6 +7,11 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    fontconfig \
+    fonts-inter \
+    fonts-lato \
+    fonts-noto-mono \
+    fonts-roboto-unhinted \
     git \
     jq \
     openscad \
