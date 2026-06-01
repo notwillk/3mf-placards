@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -25,6 +26,7 @@ DEFAULTS: dict[str, Any] = {
     "padding": 2,
     "gap": 1,
     "description": "",
+    "qr_code": "",
     "title_typeface": "",
     "title_size": 6,
     "title_alignment": "center",
@@ -32,6 +34,7 @@ DEFAULTS: dict[str, Any] = {
     "description_size": 4,
     "description_line_height": 1.25,
     "description_alignment": "center",
+    "description_vertical_alignment": "top",
     "text_color": "#000000",
     "substrate_color": "#FFFFFF",
 }
@@ -54,15 +57,18 @@ STRING_KEYS = {
     "title",
     "orientation",
     "description",
+    "qr_code",
     "title_typeface",
     "title_alignment",
     "description_typeface",
     "description_alignment",
+    "description_vertical_alignment",
     "text_color",
     "substrate_color",
 }
 ORIENTATIONS = {"landscape", "portrait"}
 ALIGNMENTS = {"left", "center", "right"}
+VERTICAL_ALIGNMENTS = {"top", "bottom", "center", "centered"}
 MODEL_SUBSTRATE_USE = "use <../substrate/model.scad>;"
 DIST_SUBSTRATE_USE = "use <substrate.scad>;"
 HEX_COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$")
@@ -72,6 +78,22 @@ XML_NS = "http://www.w3.org/XML/1998/namespace"
 COLOR_GROUP_ID = "1"
 TITLE_BLOCK_HEIGHT_FACTOR = 1.25
 TEXT_WIDTH_SAFETY_FACTOR = 1.1
+QR_TEXT_WIDTH_SAFETY_FACTOR = 1.2
+QR_BORDER_MODULES = 4
+QR_BACKGROUND_COLOR = "#FFFFFF"
+QR_DOT_COLOR = "#000000"
+
+
+MeshVertices = list[tuple[str, str, str]]
+MeshTriangles = list[tuple[int, int, int]]
+
+
+@dataclass(frozen=True)
+class MeshObject:
+    name: str
+    color_index: int
+    vertices: MeshVertices
+    triangles: MeshTriangles
 
 
 class BuildError(ValueError):
@@ -205,21 +227,30 @@ def char_width_factor(char: str) -> float:
     return 0.6
 
 
-def estimate_text_width(text: str, size: float) -> float:
+def estimate_text_width(
+    text: str,
+    size: float,
+    safety_factor: float = TEXT_WIDTH_SAFETY_FACTOR,
+) -> float:
     return (
         size
         * sum(char_width_factor(char) for char in text)
-        * TEXT_WIDTH_SAFETY_FACTOR
+        * safety_factor
     )
 
 
-def split_long_word(word: str, max_width: float, size: float) -> list[str]:
+def split_long_word(
+    word: str,
+    max_width: float,
+    size: float,
+    safety_factor: float = TEXT_WIDTH_SAFETY_FACTOR,
+) -> list[str]:
     chunks: list[str] = []
     current = ""
 
     for char in word:
         candidate = f"{current}{char}"
-        if current and estimate_text_width(candidate, size) > max_width:
+        if current and estimate_text_width(candidate, size, safety_factor) > max_width:
             chunks.append(current)
             current = char
         else:
@@ -236,19 +267,25 @@ def append_wrapped_piece(
     piece: str,
     max_width: float,
     size: float,
+    safety_factor: float = TEXT_WIDTH_SAFETY_FACTOR,
 ) -> str:
     if not current:
         return piece
 
     candidate = f"{current} {piece}"
-    if estimate_text_width(candidate, size) <= max_width:
+    if estimate_text_width(candidate, size, safety_factor) <= max_width:
         return candidate
 
     lines.append(current)
     return piece
 
 
-def wrap_text(text: str, max_width: float, size: float) -> list[str]:
+def wrap_text(
+    text: str,
+    max_width: float,
+    size: float,
+    safety_factor: float = TEXT_WIDTH_SAFETY_FACTOR,
+) -> list[str]:
     normalized = " ".join(text.split())
     if not normalized:
         return []
@@ -258,17 +295,58 @@ def wrap_text(text: str, max_width: float, size: float) -> list[str]:
 
     for word in normalized.split(" "):
         pieces = (
-            split_long_word(word, max_width, size)
-            if estimate_text_width(word, size) > max_width
+            split_long_word(word, max_width, size, safety_factor)
+            if estimate_text_width(word, size, safety_factor) > max_width
             else [word]
         )
 
         for piece in pieces:
-            current = append_wrapped_piece(lines, current, piece, max_width, size)
+            current = append_wrapped_piece(
+                lines,
+                current,
+                piece,
+                max_width,
+                size,
+                safety_factor,
+            )
 
     if current:
         lines.append(current)
     return lines
+
+
+def generate_qr_modules(qr_code: str) -> tuple[int, list[tuple[int, int]]]:
+    try:
+        import segno  # type: ignore[import-not-found]
+    except ModuleNotFoundError as exc:
+        raise BuildError(
+            "qr_code requires the Python segno package; install it with "
+            "`uv sync --extra qr` or run the builder with `uv run --extra qr`"
+        ) from exc
+
+    try:
+        qr = segno.make(qr_code)
+        rows = [
+            list(row)
+            for row in qr.matrix_iter(scale=1, border=QR_BORDER_MODULES)
+        ]
+    except Exception as exc:
+        raise BuildError(f"qr_code could not be encoded as a QR code: {exc}") from exc
+
+    if not rows:
+        raise BuildError("qr_code generated an empty QR matrix")
+
+    module_count = len(rows)
+    if any(len(row) != module_count for row in rows):
+        raise BuildError("qr_code generated a non-square QR matrix")
+
+    modules: list[tuple[int, int]] = []
+    for row_index, row in enumerate(rows):
+        for column_index, cell in enumerate(row):
+            if cell:
+                modules.append((column_index, row_index))
+
+    return module_count, modules
 
 
 def normalize_hex_color(value: str, key: str) -> str:
@@ -304,6 +382,16 @@ def normalize_values(raw_values: dict[str, Any]) -> dict[str, Any]:
     values["description_alignment"] = values["description_alignment"].lower()
     if values["description_alignment"] not in ALIGNMENTS:
         raise BuildError("description_alignment must be 'left', 'center', or 'right'")
+
+    values["description_vertical_alignment"] = values[
+        "description_vertical_alignment"
+    ].lower()
+    if values["description_vertical_alignment"] not in VERTICAL_ALIGNMENTS:
+        raise BuildError(
+            "description_vertical_alignment must be 'top', 'bottom', or 'center'"
+        )
+    if values["description_vertical_alignment"] == "centered":
+        values["description_vertical_alignment"] = "center"
 
     values["text_color"] = normalize_hex_color(values["text_color"], "text_color")
     values["substrate_color"] = normalize_hex_color(
@@ -352,18 +440,42 @@ def normalize_values(raw_values: dict[str, Any]) -> dict[str, Any]:
     if text_width <= 0 or text_height <= 0:
         raise BuildError("border_thickness and padding leave no text area")
 
+    title_block_height = values["title_size"] * TITLE_BLOCK_HEIGHT_FACTOR
+    available_description_height = text_height - title_block_height - values["gap"]
+    has_qr_code = values["qr_code"] != ""
+    if has_qr_code:
+        if available_description_height <= 0:
+            raise BuildError("qr_code does not fit below the title with the current layout")
+
+        description_text_width = (
+            text_width - available_description_height - values["gap"]
+        )
+        if description_text_width <= 0:
+            raise BuildError(
+                "qr_code leaves no description width with the current layout"
+            )
+
+        values["qr_module_count"], values["qr_modules"] = generate_qr_modules(
+            values["qr_code"]
+        )
+    else:
+        description_text_width = text_width
+        values["qr_module_count"] = 0
+        values["qr_modules"] = []
+
+    values["description_text_width"] = description_text_width
+
     values["description_lines"] = wrap_text(
         values["description"],
-        text_width,
+        description_text_width,
         values["description_size"],
+        QR_TEXT_WIDTH_SAFETY_FACTOR if has_qr_code else TEXT_WIDTH_SAFETY_FACTOR,
     )
     values["description_line_spacing"] = (
         values["description_size"] * values["description_line_height"]
     )
 
     if values["description_lines"]:
-        title_block_height = values["title_size"] * TITLE_BLOCK_HEIGHT_FACTOR
-        available_description_height = text_height - title_block_height - values["gap"]
         required_description_height = values["description_size"] + (
             (len(values["description_lines"]) - 1) * values["description_line_spacing"]
         )
@@ -379,6 +491,10 @@ def scad_string(value: str) -> str:
 
 def scad_string_list(values: list[str]) -> str:
     return "[" + ", ".join(scad_string(value) for value in values) + "]"
+
+
+def scad_int_pair_list(values: list[tuple[int, int]]) -> str:
+    return "[" + ", ".join(f"[{left}, {right}]" for left, right in values) + "]"
 
 
 def scad_number(value: int | float) -> str:
@@ -408,8 +524,13 @@ FEATURE_ARGUMENTS = [
     ("placard_description_typeface", "description_typeface"),
     ("placard_description_size", "description_size"),
     ("placard_description_alignment", "description_alignment"),
+    ("placard_description_vertical_alignment", "description_vertical_alignment"),
     ("placard_description_lines", "description_lines"),
     ("placard_description_line_spacing", "description_line_spacing"),
+    ("placard_description_text_width", "description_text_width"),
+    ("placard_qr_code", "qr_code"),
+    ("placard_qr_module_count", "qr_module_count"),
+    ("placard_qr_modules", "qr_modules"),
 ]
 FULL_PLACARD_ARGUMENTS = FEATURE_ARGUMENTS + [
     ("placard_text_color", "text_color"),
@@ -451,8 +572,13 @@ def value_assignment_lines(values: dict[str, Any]) -> list[str]:
         f"description_size = {scad_number(values['description_size'])};",
         f"description_line_height = {scad_number(values['description_line_height'])};",
         f"description_alignment = {scad_string(values['description_alignment'])};",
+        f"description_vertical_alignment = {scad_string(values['description_vertical_alignment'])};",
         f"description_lines = {scad_string_list(values['description_lines'])};",
         f"description_line_spacing = {scad_number(values['description_line_spacing'])};",
+        f"description_text_width = {scad_number(values['description_text_width'])};",
+        f"qr_code = {scad_string(values['qr_code'])};",
+        f"qr_module_count = {scad_number(values['qr_module_count'])};",
+        f"qr_modules = {scad_int_pair_list(values['qr_modules'])};",
         f"text_color = {scad_string(values['text_color'])};",
         f"substrate_color = {scad_string(values['substrate_color'])};",
     ]
@@ -501,6 +627,44 @@ def write_title_description_scad(
     out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def write_qr_background_scad(
+    values: dict[str, Any],
+    model_name: str,
+    out_path: Path,
+) -> None:
+    lines = [
+        *generated_header(model_name),
+        *value_assignment_lines(values),
+        "",
+        f"color({scad_string(QR_BACKGROUND_COLOR)}) {{",
+        "  placard_qr_background(",
+        *render_call_arguments(FEATURE_ARGUMENTS, "    "),
+        "  );",
+        "}",
+        "",
+    ]
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def write_qr_dots_scad(
+    values: dict[str, Any],
+    model_name: str,
+    out_path: Path,
+) -> None:
+    lines = [
+        *generated_header(model_name),
+        *value_assignment_lines(values),
+        "",
+        f"color({scad_string(QR_DOT_COLOR)}) {{",
+        "  placard_qr_dots(",
+        *render_call_arguments(FEATURE_ARGUMENTS, "    "),
+        "  );",
+        "}",
+        "",
+    ]
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+
+
 def write_substrate_cut_scad(
     values: dict[str, Any],
     model_name: str,
@@ -532,6 +696,14 @@ def copy_model_for_dist(model_path: Path, out_path: Path) -> None:
     )
 
 
+def unlink_optional_outputs(paths: list[Path]) -> None:
+    for path in paths:
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def format_mesh_number(value: float) -> str:
     text = f"{value:.6f}".rstrip("0").rstrip(".")
     if text in {"", "-0"}:
@@ -539,8 +711,8 @@ def format_mesh_number(value: float) -> str:
     return text
 
 
-def parse_ascii_stl(stl_path: Path) -> tuple[list[tuple[str, str, str]], list[tuple[int, int, int]]]:
-    vertices: list[tuple[str, str, str]] = []
+def parse_ascii_stl(stl_path: Path) -> tuple[MeshVertices, MeshTriangles]:
+    vertices: MeshVertices = []
     vertex_indexes: dict[tuple[str, str, str], int] = {}
     triangles: list[tuple[int, int, int]] = []
     triangle_vertices: list[int] = []
@@ -594,8 +766,8 @@ def add_mesh_object(
     object_id: int,
     name: str,
     color_index: int,
-    vertices: list[tuple[str, str, str]],
-    triangles: list[tuple[int, int, int]],
+    vertices: MeshVertices,
+    triangles: MeshTriangles,
 ) -> None:
     model_object = ET.SubElement(
         resources,
@@ -651,14 +823,7 @@ def relationships_xml() -> bytes:
     )
 
 
-def model_xml(
-    text_vertices: list[tuple[str, str, str]],
-    text_triangles: list[tuple[int, int, int]],
-    substrate_vertices: list[tuple[str, str, str]],
-    substrate_triangles: list[tuple[int, int, int]],
-    text_color: str,
-    substrate_color: str,
-) -> bytes:
+def model_xml(mesh_objects: list[MeshObject], color_values: list[str]) -> bytes:
     ET.register_namespace("", CORE_NS)
     ET.register_namespace("m", MATERIAL_NS)
 
@@ -671,16 +836,27 @@ def model_xml(
         },
     )
     resources = ET.SubElement(model, core_tag("resources"))
-    colors = ET.SubElement(resources, material_tag("colorgroup"), {"id": COLOR_GROUP_ID})
-    ET.SubElement(colors, material_tag("color"), {"color": text_color})
-    ET.SubElement(colors, material_tag("color"), {"color": substrate_color})
+    color_group = ET.SubElement(
+        resources,
+        material_tag("colorgroup"),
+        {"id": COLOR_GROUP_ID},
+    )
+    for color in color_values:
+        ET.SubElement(color_group, material_tag("color"), {"color": color})
 
-    add_mesh_object(resources, 2, "title-description", 0, text_vertices, text_triangles)
-    add_mesh_object(resources, 3, "substrate", 1, substrate_vertices, substrate_triangles)
+    for offset, mesh_object in enumerate(mesh_objects):
+        add_mesh_object(
+            resources,
+            2 + offset,
+            mesh_object.name,
+            mesh_object.color_index,
+            mesh_object.vertices,
+            mesh_object.triangles,
+        )
 
     build = ET.SubElement(model, core_tag("build"))
-    ET.SubElement(build, core_tag("item"), {"objectid": "2"})
-    ET.SubElement(build, core_tag("item"), {"objectid": "3"})
+    for offset, _mesh_object in enumerate(mesh_objects):
+        ET.SubElement(build, core_tag("item"), {"objectid": str(2 + offset)})
 
     if hasattr(ET, "indent"):
         ET.indent(model)
@@ -694,24 +870,37 @@ def write_3mf(
     three_mf_path: Path,
     text_color: str,
     substrate_color: str,
+    qr_stl_paths: tuple[Path, Path] | None = None,
 ) -> None:
     text_vertices, text_triangles = parse_ascii_stl(text_stl_path)
     substrate_vertices, substrate_triangles = parse_ascii_stl(substrate_stl_path)
+    mesh_objects = [
+        MeshObject("title-description", 0, text_vertices, text_triangles),
+    ]
+    colors = [text_color, substrate_color]
+
+    if qr_stl_paths is not None:
+        qr_background_vertices, qr_background_triangles = parse_ascii_stl(qr_stl_paths[0])
+        qr_dots_vertices, qr_dots_triangles = parse_ascii_stl(qr_stl_paths[1])
+        colors.extend([QR_BACKGROUND_COLOR, QR_DOT_COLOR])
+        mesh_objects.extend(
+            [
+                MeshObject(
+                    "qr-background",
+                    2,
+                    qr_background_vertices,
+                    qr_background_triangles,
+                ),
+                MeshObject("qr-dots", 3, qr_dots_vertices, qr_dots_triangles),
+            ]
+        )
+
+    mesh_objects.append(MeshObject("substrate", 1, substrate_vertices, substrate_triangles))
 
     with zipfile.ZipFile(three_mf_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("[Content_Types].xml", content_types_xml())
         archive.writestr("_rels/.rels", relationships_xml())
-        archive.writestr(
-            "3D/3dmodel.model",
-            model_xml(
-                text_vertices,
-                text_triangles,
-                substrate_vertices,
-                substrate_triangles,
-                text_color,
-                substrate_color,
-            ),
-        )
+        archive.writestr("3D/3dmodel.model", model_xml(mesh_objects, colors))
 
 
 def export_stl(scad_path: Path, stl_path: Path) -> None:
@@ -738,21 +927,41 @@ def main() -> int:
         substrate_out = args.out_dir / "substrate.scad"
         scad_out = args.out_dir / "placard.scad"
         text_scad_out = args.out_dir / "title-description.scad"
+        qr_background_scad_out = args.out_dir / "qr-background.scad"
+        qr_dots_scad_out = args.out_dir / "qr-dots.scad"
         substrate_cut_scad_out = args.out_dir / "substrate-cut.scad"
         stl_out = args.out_dir / "placard.stl"
         text_stl_out = args.out_dir / "title-description.stl"
+        qr_background_stl_out = args.out_dir / "qr-background.stl"
+        qr_dots_stl_out = args.out_dir / "qr-dots.stl"
         substrate_cut_stl_out = args.out_dir / "substrate-cut.stl"
         three_mf_out = args.out_dir / "placard.3mf"
+        qr_outputs = [
+            qr_background_scad_out,
+            qr_dots_scad_out,
+            qr_background_stl_out,
+            qr_dots_stl_out,
+        ]
 
         copy_model_for_dist(args.model, model_out)
         shutil.copyfile(substrate_model, substrate_out)
         write_scad(values, model_out.name, scad_out)
         write_title_description_scad(values, model_out.name, text_scad_out)
+        if values["qr_code"] != "":
+            write_qr_background_scad(values, model_out.name, qr_background_scad_out)
+            write_qr_dots_scad(values, model_out.name, qr_dots_scad_out)
+        else:
+            unlink_optional_outputs(qr_outputs)
         write_substrate_cut_scad(values, model_out.name, substrate_cut_scad_out)
 
         if not args.skip_export:
             export_stl(scad_out, stl_out)
             export_stl(text_scad_out, text_stl_out)
+            qr_stl_paths = None
+            if values["qr_code"] != "":
+                export_stl(qr_background_scad_out, qr_background_stl_out)
+                export_stl(qr_dots_scad_out, qr_dots_stl_out)
+                qr_stl_paths = (qr_background_stl_out, qr_dots_stl_out)
             export_stl(substrate_cut_scad_out, substrate_cut_stl_out)
             write_3mf(
                 text_stl_out,
@@ -760,6 +969,7 @@ def main() -> int:
                 three_mf_out,
                 values["text_color"],
                 values["substrate_color"],
+                qr_stl_paths,
             )
 
     except (BuildError, OSError, subprocess.CalledProcessError) as exc:

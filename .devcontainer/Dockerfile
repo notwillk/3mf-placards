@@ -28,3 +28,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
   && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://raw.githubusercontent.com/notwillk/checksy/main/scripts/install.sh | bash
+
+RUN curl -fsSL https://astral.sh/uv/install.sh -o /tmp/uv-install.sh \
+  && env UV_INSTALL_DIR=/usr/local/bin sh /tmp/uv-install.sh \
+  && rm -f /tmp/uv-install.sh

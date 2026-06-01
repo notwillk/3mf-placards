@@ -2,7 +2,7 @@ rules:
   - name: build placard title description model sample
     check: ./scripts/build.sh && test -f dist/substrate.scad && test -f dist/placard.scad && test -f dist/title-description.scad && test -f dist/substrate-cut.scad && test -s dist/placard.stl && test -s dist/title-description.stl && test -s dist/substrate-cut.stl && test -s dist/placard.3mf
   - name: generated scad contains layout defaults
-    check: grep -q 'title = "Model Sample"' dist/placard.scad && grep -q 'title_size = 6' dist/placard.scad && grep -q 'title_block_height_factor = 1.25' dist/placard.scad && grep -q 'title_alignment = "center"' dist/placard.scad && grep -q 'description_line_height = 1.25' dist/placard.scad && grep -q 'description_line_spacing = 5' dist/placard.scad && grep -Fq 'description_lines = ["Raised text sample."]' dist/placard.scad && grep -q 'description_alignment = "center"' dist/placard.scad && grep -q 'text_color = "#000000"' dist/placard.scad && grep -q 'substrate_color = "#FFFFFF"' dist/placard.scad && grep -q 'placard_title_description_body(' dist/title-description.scad && grep -q 'placard_substrate_cut(' dist/substrate-cut.scad && ! grep -q 'placard_title_description_features(' dist/title-description.scad && ! grep -q 'title_scale' dist/placard.scad
+    check: grep -q 'title = "Model Sample"' dist/placard.scad && grep -q 'title_size = 6' dist/placard.scad && grep -q 'title_block_height_factor = 1.25' dist/placard.scad && grep -q 'title_alignment = "center"' dist/placard.scad && grep -q 'description_line_height = 1.25' dist/placard.scad && grep -q 'description_line_spacing = 5' dist/placard.scad && grep -q 'description_text_width = 67' dist/placard.scad && grep -Fq 'description_lines = ["Raised text sample."]' dist/placard.scad && grep -q 'description_alignment = "center"' dist/placard.scad && grep -q 'description_vertical_alignment = "top"' dist/placard.scad && grep -q 'qr_code = ""' dist/placard.scad && grep -q 'qr_module_count = 0' dist/placard.scad && grep -q 'text_color = "#000000"' dist/placard.scad && grep -q 'substrate_color = "#FFFFFF"' dist/placard.scad && grep -q 'placard_title_description_body(' dist/title-description.scad && grep -q 'placard_substrate_cut(' dist/substrate-cut.scad && ! test -e dist/qr-background.scad && ! test -e dist/qr-dots.scad && ! grep -q 'placard_title_description_features(' dist/title-description.scad && ! grep -q 'title_scale' dist/placard.scad
   - name: generated 3mf contains colored text and substrate objects
     check: |
       python3 - <<'PY'
@@ -56,6 +56,91 @@ rules:
       assert_close(text_max, 2)
       assert_close(substrate_min, 0.4)
       assert_close(substrate_max, 2)
+      PY
+  - name: generated qr fixture contains qr objects
+    check: |
+      env UV_LINK_MODE="${UV_LINK_MODE:-copy}" uv run --extra qr python3 scripts/build.py \
+        --values qr-values.yaml \
+        --model model.scad \
+        --substrate-model ../substrate/model.scad \
+        --out-dir dist/qr
+      test -f dist/qr/qr-background.scad
+      test -f dist/qr/qr-dots.scad
+      test -s dist/qr/qr-background.stl
+      test -s dist/qr/qr-dots.stl
+      grep -q 'qr_code = "https://example.com"' dist/qr/placard.scad
+      grep -q 'description_text_width = 45' dist/qr/placard.scad
+      grep -Fq 'description_lines = ["Scan this code", "for example."]' dist/qr/placard.scad
+      grep -q 'description_vertical_alignment = "top"' dist/qr/placard.scad
+      grep -Eq 'qr_module_count = [1-9][0-9]*' dist/qr/placard.scad
+      grep -Fq 'qr_modules = [[' dist/qr/placard.scad
+      grep -Fq 'placard_qr_background(' dist/qr/qr-background.scad
+      grep -Fq 'placard_qr_dots(' dist/qr/qr-dots.scad
+      python3 - <<'PY'
+      import zipfile
+      import xml.etree.ElementTree as ET
+
+      core = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
+      material = "http://schemas.microsoft.com/3dmanufacturing/material/2015/02"
+      ns = {"c": core, "m": material}
+
+      with zipfile.ZipFile("dist/qr/placard.3mf") as archive:
+          root = ET.fromstring(archive.read("3D/3dmodel.model"))
+
+      objects = root.findall(".//c:object", ns)
+      assert [item.get("name") for item in objects] == [
+          "title-description",
+          "qr-background",
+          "qr-dots",
+          "substrate",
+      ]
+      assert [item.get("pindex") for item in objects] == ["0", "2", "3", "1"]
+      assert [color.get("color") for color in root.findall(".//m:color", ns)] == [
+          "#000000",
+          "#CCCCCC",
+          "#FFFFFF",
+          "#000000",
+      ]
+      assert [item.get("objectid") for item in root.findall(".//c:build/c:item", ns)] == [
+          "2",
+          "3",
+          "4",
+          "5",
+      ]
+      assert all(item.findall(".//c:triangle", ns) for item in objects)
+
+      by_name = {item.get("name"): item for item in objects}
+
+      def bounds(item):
+          xs = [float(vertex.get("x")) for vertex in item.findall(".//c:vertex", ns)]
+          ys = [float(vertex.get("y")) for vertex in item.findall(".//c:vertex", ns)]
+          zs = [float(vertex.get("z")) for vertex in item.findall(".//c:vertex", ns)]
+          return (min(xs), min(ys), min(zs)), (max(xs), max(ys), max(zs))
+
+      def assert_close(actual, expected):
+          assert abs(actual - expected) <= 0.001, (actual, expected)
+
+      def assert_bounds(item, expected_min, expected_max):
+          actual_min, actual_max = bounds(item)
+          for actual, expected in zip(actual_min, expected_min):
+              assert_close(actual, expected)
+          for actual, expected in zip(actual_max, expected_max):
+              assert_close(actual, expected)
+
+      def assert_triangle_color(item, color_index):
+          triangles = item.findall(".//c:triangle", ns)
+          assert triangles
+          assert all(triangle.get("pid") == "1" for triangle in triangles)
+          assert all(triangle.get("p1") == color_index for triangle in triangles)
+
+      assert_bounds(by_name["qr-background"], (12.5, -14.75, 1.6), (33.5, 6.25, 2))
+      dots_min, dots_max = bounds(by_name["qr-dots"])
+      assert 12.5 < dots_min[0] < dots_max[0] < 33.5, (dots_min, dots_max)
+      assert -14.75 < dots_min[1] < dots_max[1] < 6.25, (dots_min, dots_max)
+      assert_close(dots_min[2], 1.6)
+      assert_close(dots_max[2], 2)
+      assert_triangle_color(by_name["qr-background"], "2")
+      assert_triangle_color(by_name["qr-dots"], "3")
       PY
   - name: package placard title description model sample
     check: ./scripts/package.sh && test -f dist/model.tgz

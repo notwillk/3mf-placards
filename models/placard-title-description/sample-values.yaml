@@ -1,5 +1,6 @@
 title: "Model Sample"
 description: "Raised text sample."
+qr_code: ""
 width: 75
 aspect_ratio: 2
 thickness: 2
@@ -16,5 +17,6 @@ description_typeface: ""
 description_size: 4
 description_line_height: 1.25
 description_alignment: "center"
+description_vertical_alignment: "top"
 text_color: "#000000"
 substrate_color: "#FFFFFF"

@@ -9,7 +9,8 @@
     "ghcr.io/notwillk/devcontainer-features/openscad-cli:1": {}
   },
   "containerEnv": {
-    "PATH": "${containerWorkspaceFolder}/tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    "PATH": "${containerWorkspaceFolder}/tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "UV_LINK_MODE": "copy"
   },
   "customizations": {
     "vscode": {

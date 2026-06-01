@@ -1,0 +1,43 @@
+rules:
+  - name: build qr sample placard
+    check: ./scripts/build.sh && test -f dist/substrate.scad && test -f dist/placard.scad && test -f dist/title-description.scad && test -f dist/substrate-cut.scad && test -f dist/qr-background.scad && test -f dist/qr-dots.scad && test -s dist/placard.stl && test -s dist/title-description.stl && test -s dist/substrate-cut.stl && test -s dist/qr-background.stl && test -s dist/qr-dots.stl && test -s dist/placard.3mf
+  - name: generated scad contains qr sample values
+    check: grep -q 'title = "QR Sample"' dist/placard.scad && grep -q 'qr_code = "https://example.com"' dist/placard.scad && grep -q 'description_text_width = 45' dist/placard.scad && grep -Fq 'description_lines = ["Scan this code", "for example."]' dist/placard.scad && grep -q 'description_vertical_alignment = "bottom"' dist/placard.scad && grep -Eq 'qr_module_count = [1-9][0-9]*' dist/placard.scad && grep -Fq 'qr_modules = [[' dist/placard.scad && grep -Fq 'placard_qr_background(' dist/qr-background.scad && grep -Fq 'placard_qr_dots(' dist/qr-dots.scad
+  - name: generated 3mf contains qr objects
+    check: |
+      python3 - <<'PY'
+      import zipfile
+      import xml.etree.ElementTree as ET
+
+      core = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
+      material = "http://schemas.microsoft.com/3dmanufacturing/material/2015/02"
+      ns = {"c": core, "m": material}
+
+      with zipfile.ZipFile("dist/placard.3mf") as archive:
+          root = ET.fromstring(archive.read("3D/3dmodel.model"))
+
+      objects = root.findall(".//c:object", ns)
+      assert root.get("recommendedextensions") == "m"
+      assert [item.get("name") for item in objects] == [
+          "title-description",
+          "qr-background",
+          "qr-dots",
+          "substrate",
+      ]
+      assert [item.get("pindex") for item in objects] == ["0", "2", "3", "1"]
+      assert [color.get("color") for color in root.findall(".//m:color", ns)] == [
+          "#000000",
+          "#CCCCCC",
+          "#FFFFFF",
+          "#000000",
+      ]
+      assert [item.get("objectid") for item in root.findall(".//c:build/c:item", ns)] == [
+          "2",
+          "3",
+          "4",
+          "5",
+      ]
+      assert all(item.findall(".//c:triangle", ns) for item in objects)
+      PY
+  - name: package qr sample placard
+    check: ./scripts/package.sh && test -f dist/placard.tgz

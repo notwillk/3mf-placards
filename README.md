@@ -25,3 +25,5 @@ The canonical environment is the Dockerfile-based `.devcontainer`. On create, it
 ```bash
 checksy --config verify.checksy.yaml check
 ```
+
+The devcontainer includes `uv` for Python package management.

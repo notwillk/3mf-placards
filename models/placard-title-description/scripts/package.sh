@@ -8,13 +8,20 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 mkdir -p "$PROJECT_DIR/dist"
 cd "$PROJECT_DIR/dist"
 rm -f model.tgz
-tar -czf model.tgz \
-	model.scad \
-	substrate.scad \
-	placard.scad \
-	title-description.scad \
-	substrate-cut.scad \
-	placard.stl \
-	title-description.stl \
-	substrate-cut.stl \
+files=(
+	model.scad
+	substrate.scad
+	placard.scad
+	title-description.scad
+	substrate-cut.scad
+	placard.stl
+	title-description.stl
+	substrate-cut.stl
 	placard.3mf
+)
+for optional in qr-background.scad qr-dots.scad qr-background.stl qr-dots.stl; do
+	if [[ -f "$optional" ]]; then
+		files+=("$optional")
+	fi
+done
+tar -czf model.tgz "${files[@]}"
