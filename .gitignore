@@ -1,4 +1,6 @@
 .checksy-cache/
 **/dist/
+__pycache__/
+*.pyc
 
 .moon/cache/

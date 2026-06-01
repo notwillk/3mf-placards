@@ -1,0 +1,7 @@
+rules:
+  - name: build placard title description model sample
+    check: ./scripts/build.sh && test -f dist/placard.scad && test -s dist/placard.stl
+  - name: generated scad contains model defaults
+    check: grep -q 'title = "Model Sample"' dist/placard.scad && grep -q 'width = 75' dist/placard.scad
+  - name: package placard title description model sample
+    check: ./scripts/package.sh && test -f dist/model.tgz

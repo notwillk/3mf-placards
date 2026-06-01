@@ -9,6 +9,9 @@ RUN apt-get update \
     curl \
     git \
     jq \
+    openscad \
+    python3 \
+    python3-yaml \
     shellcheck \
     shfmt \
   && rm -rf /var/lib/apt/lists/*

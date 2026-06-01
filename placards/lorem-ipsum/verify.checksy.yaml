@@ -1,0 +1,7 @@
+rules:
+  - name: build lorem ipsum placard
+    check: ./scripts/build.sh && test -f dist/placard.scad && test -s dist/placard.stl
+  - name: generated scad contains lorem ipsum values
+    check: grep -q 'title = "Lorem Ipsum"' dist/placard.scad && grep -q 'description = ""' dist/placard.scad
+  - name: package lorem ipsum placard
+    check: ./scripts/package.sh && test -f dist/placard.tgz
