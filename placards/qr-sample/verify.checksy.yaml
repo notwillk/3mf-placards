@@ -2,7 +2,17 @@ rules:
   - name: build qr sample placard
     check: ./scripts/build.sh && test -f dist/substrate.scad && test -f dist/placard.scad && test -f dist/title-description.scad && test -f dist/substrate-cut.scad && test -f dist/qr-background.scad && test -f dist/qr-dots.scad && test -s dist/placard.stl && test -s dist/title-description.stl && test -s dist/substrate-cut.stl && test -s dist/qr-background.stl && test -s dist/qr-dots.stl && test -s dist/placard.3mf
   - name: generated scad contains qr sample values
-    check: grep -q 'title = "QR Sample"' dist/placard.scad && grep -q 'qr_code = "https://example.com"' dist/placard.scad && grep -q 'description_text_width = 45' dist/placard.scad && grep -Fq 'description_lines = ["Scan this code", "for example."]' dist/placard.scad && grep -q 'description_vertical_alignment = "bottom"' dist/placard.scad && grep -Eq 'qr_module_count = [1-9][0-9]*' dist/placard.scad && grep -Fq 'qr_modules = [[' dist/placard.scad && grep -Fq 'placard_qr_background(' dist/qr-background.scad && grep -Fq 'placard_qr_dots(' dist/qr-dots.scad
+    check: |
+      grep -q 'title = "QR Sample"' dist/placard.scad
+      grep -Fq 'description = "SSID: abc123\nmysupersecret"' dist/placard.scad
+      grep -q 'qr_code = "https://example.com"' dist/placard.scad
+      grep -q 'description_text_width = 45' dist/placard.scad
+      grep -Fq 'description_lines = ["SSID: abc123", "mysupersecret"]' dist/placard.scad
+      grep -q 'description_vertical_alignment = "bottom"' dist/placard.scad
+      grep -Eq 'qr_module_count = [1-9][0-9]*' dist/placard.scad
+      grep -Fq 'qr_modules = [[' dist/placard.scad
+      grep -Fq 'placard_qr_background(' dist/qr-background.scad
+      grep -Fq 'placard_qr_dots(' dist/qr-dots.scad
   - name: generated 3mf contains qr objects
     check: |
       python3 - <<'PY'

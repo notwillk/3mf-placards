@@ -3,6 +3,30 @@ rules:
     check: ./scripts/build.sh && test -f dist/substrate.scad && test -f dist/placard.scad && test -f dist/title-description.scad && test -f dist/substrate-cut.scad && test -s dist/placard.stl && test -s dist/title-description.stl && test -s dist/substrate-cut.stl && test -s dist/placard.3mf
   - name: generated scad contains layout defaults
     check: grep -q 'title = "Model Sample"' dist/placard.scad && grep -q 'title_size = 6' dist/placard.scad && grep -q 'title_block_height_factor = 1.25' dist/placard.scad && grep -q 'title_alignment = "center"' dist/placard.scad && grep -q 'description_line_height = 1.25' dist/placard.scad && grep -q 'description_line_spacing = 5' dist/placard.scad && grep -q 'description_text_width = 67' dist/placard.scad && grep -Fq 'description_lines = ["Raised text sample."]' dist/placard.scad && grep -q 'description_alignment = "center"' dist/placard.scad && grep -q 'description_vertical_alignment = "top"' dist/placard.scad && grep -q 'qr_code = ""' dist/placard.scad && grep -q 'qr_module_count = 0' dist/placard.scad && grep -q 'text_color = "#000000"' dist/placard.scad && grep -q 'substrate_color = "#FFFFFF"' dist/placard.scad && grep -q 'placard_title_description_body(' dist/title-description.scad && grep -q 'placard_substrate_cut(' dist/substrate-cut.scad && ! test -e dist/qr-background.scad && ! test -e dist/qr-dots.scad && ! grep -q 'placard_title_description_features(' dist/title-description.scad && ! grep -q 'title_scale' dist/placard.scad
+  - name: builder preserves description newlines and trims source lines
+    check: |
+      python3 - <<'PY'
+      import importlib.util
+      import sys
+      from pathlib import Path
+
+      spec = importlib.util.spec_from_file_location("placard_build", Path("scripts/build.py"))
+      build = importlib.util.module_from_spec(spec)
+      sys.modules[spec.name] = build
+      spec.loader.exec_module(build)
+
+      values = build.normalize_values({
+          "title": "Trim Fixture",
+          "description": "  SSID: abc123  \n   \n  mysupersecret  ",
+      })
+      assert values["description_lines"] == ["SSID: abc123", "", "mysupersecret"]
+
+      empty = build.normalize_values({
+          "title": "Empty Fixture",
+          "description": "   \n  ",
+      })
+      assert empty["description_lines"] == []
+      PY
   - name: generated 3mf contains colored text and substrate objects
     check: |
       python3 - <<'PY'

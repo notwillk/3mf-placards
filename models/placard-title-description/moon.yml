@@ -8,7 +8,11 @@ tasks:
     script: "shellcheck scripts/*.sh && python3 -m py_compile scripts/build.py"
   build:
     script: "./scripts/build.sh"
+    outputs:
+      - "dist/**"
   verify:
     script: "checksy --config verify.checksy.yaml check"
   package:
     script: "./scripts/package.sh"
+    outputs:
+      - "dist/**"

@@ -1,6 +1,6 @@
-title: "QR Sample"
-description: "Scan this code for example."
-qr_code: "https://example.com"
+title: "JOIN THE WIFI"
+description: "SSID: MyNetwork\nsupersecret"
+qr_code: "WIFI:T:WPA;S:MyNetwork;P:supersecret;;"
 width: 75
 aspect_ratio: 2
 thickness: 2
@@ -11,10 +11,10 @@ orientation: "landscape"
 padding: 2
 gap: 1
 title_typeface: ""
-title_size: 6
+title_size: 4
 title_alignment: "left"
 description_typeface: ""
-description_size: 4
+description_size: 2
 description_line_height: 1.25
 description_alignment: "left"
 description_vertical_alignment: "bottom"

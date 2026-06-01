@@ -280,13 +280,13 @@ def append_wrapped_piece(
     return piece
 
 
-def wrap_text(
-    text: str,
+def wrap_text_line(
+    line: str,
     max_width: float,
     size: float,
     safety_factor: float = TEXT_WIDTH_SAFETY_FACTOR,
 ) -> list[str]:
-    normalized = " ".join(text.split())
+    normalized = " ".join(line.split())
     if not normalized:
         return []
 
@@ -312,6 +312,30 @@ def wrap_text(
 
     if current:
         lines.append(current)
+    return lines
+
+
+def wrap_text(
+    text: str,
+    max_width: float,
+    size: float,
+    safety_factor: float = TEXT_WIDTH_SAFETY_FACTOR,
+) -> list[str]:
+    physical_lines = [line.strip() for line in text.split("\n")]
+
+    while physical_lines and physical_lines[0] == "":
+        physical_lines.pop(0)
+    while physical_lines and physical_lines[-1] == "":
+        physical_lines.pop()
+    if not physical_lines:
+        return []
+
+    lines: list[str] = []
+    for physical_line in physical_lines:
+        if physical_line == "":
+            lines.append("")
+            continue
+        lines.extend(wrap_text_line(physical_line, max_width, size, safety_factor))
     return lines
 
 

@@ -8,7 +8,20 @@ tasks:
     script: "shellcheck scripts/*.sh"
   build:
     script: "./scripts/build.sh"
+    inputs:
+      - "moon.yml"
+      - "values.yaml"
+      - "scripts/**/*"
+      - "/models/placard-title-description/model.scad"
+      - "/models/placard-title-description/scripts/**/*"
+      - "/models/substrate/model.scad"
+      - "/pyproject.toml"
+      - "/uv.lock"
+    outputs:
+      - "dist/**"
   verify:
     script: "checksy --config verify.checksy.yaml check"
   package:
     script: "./scripts/package.sh"
+    outputs:
+      - "dist/**"
