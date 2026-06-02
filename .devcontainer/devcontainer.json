@@ -6,11 +6,15 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/common-utils:2": {},
-    "ghcr.io/notwillk/devcontainer-features/openscad-cli:1": {}
+    "ghcr.io/notwillk/devcontainer-features/openscad-cli:1": {},
+    "ghcr.io/notwillk/devcontainer-features/ssh-server": {
+      "port": "22"
+    }
   },
   "containerEnv": {
     "PATH": "${containerWorkspaceFolder}/tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-    "UV_LINK_MODE": "copy"
+    "UV_LINK_MODE": "copy",
+    "SSH_PUBLIC_KEY": "${localEnv:SSH_PUBLIC_KEY}"
   },
   "customizations": {
     "vscode": {
@@ -27,5 +31,11 @@
       ]
     }
   },
-  "postCreateCommand": "checksy --config verify.checksy.yaml check"
+  "postCreateCommand": "checksy --config verify.checksy.yaml check",
+  "appPort": [
+    "2223:22"
+  ],
+  "forwardPorts": [
+    22
+  ]
 }

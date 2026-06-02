@@ -14,6 +14,11 @@
       "version": "1.0.0",
       "resolved": "ghcr.io/notwillk/devcontainer-features/openscad-cli@sha256:5b811302a702155a90a22595550d015fc983c3c12b689e187cc0e30185b9ad4d",
       "integrity": "sha256:5b811302a702155a90a22595550d015fc983c3c12b689e187cc0e30185b9ad4d"
+    },
+    "ghcr.io/notwillk/devcontainer-features/ssh-server": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/notwillk/devcontainer-features/ssh-server@sha256:ff7c4b18ef07e7beeddd7d41f7a57908ed8c5e242075f7bc152407d996aead4c",
+      "integrity": "sha256:ff7c4b18ef07e7beeddd7d41f7a57908ed8c5e242075f7bc152407d996aead4c"
     }
   }
 }
