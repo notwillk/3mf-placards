@@ -706,10 +706,14 @@ def write_substrate_cut_scad(
     out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def resolve_substrate_model_path(model_path: Path, substrate_model: Path | None) -> Path:
+    if substrate_model is not None:
+        return substrate_model
+    return model_path.parent.parent / "substrate" / "model.scad"
+
+
 def resolve_substrate_model(args: argparse.Namespace) -> Path:
-    if args.substrate_model is not None:
-        return args.substrate_model
-    return args.model.parent.parent / "substrate" / "model.scad"
+    return resolve_substrate_model_path(args.model, args.substrate_model)
 
 
 def copy_model_for_dist(model_path: Path, out_path: Path) -> None:
@@ -938,63 +942,81 @@ def export_stl(scad_path: Path, stl_path: Path) -> None:
     )
 
 
+def build_placard(
+    raw_values: dict[str, Any],
+    model_path: Path,
+    out_dir: Path,
+    substrate_model: Path | None = None,
+    skip_export: bool = False,
+) -> dict[str, Any]:
+    values = normalize_values(raw_values)
+    resolved_substrate_model = resolve_substrate_model_path(model_path, substrate_model)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    model_out = out_dir / "model.scad"
+    substrate_out = out_dir / "substrate.scad"
+    scad_out = out_dir / "placard.scad"
+    text_scad_out = out_dir / "title-description.scad"
+    qr_background_scad_out = out_dir / "qr-background.scad"
+    qr_dots_scad_out = out_dir / "qr-dots.scad"
+    substrate_cut_scad_out = out_dir / "substrate-cut.scad"
+    stl_out = out_dir / "placard.stl"
+    text_stl_out = out_dir / "title-description.stl"
+    qr_background_stl_out = out_dir / "qr-background.stl"
+    qr_dots_stl_out = out_dir / "qr-dots.stl"
+    substrate_cut_stl_out = out_dir / "substrate-cut.stl"
+    three_mf_out = out_dir / "placard.3mf"
+    qr_outputs = [
+        qr_background_scad_out,
+        qr_dots_scad_out,
+        qr_background_stl_out,
+        qr_dots_stl_out,
+    ]
+
+    copy_model_for_dist(model_path, model_out)
+    shutil.copyfile(resolved_substrate_model, substrate_out)
+    write_scad(values, model_out.name, scad_out)
+    write_title_description_scad(values, model_out.name, text_scad_out)
+    if values["qr_code"] != "":
+        write_qr_background_scad(values, model_out.name, qr_background_scad_out)
+        write_qr_dots_scad(values, model_out.name, qr_dots_scad_out)
+    else:
+        unlink_optional_outputs(qr_outputs)
+    write_substrate_cut_scad(values, model_out.name, substrate_cut_scad_out)
+
+    if not skip_export:
+        export_stl(scad_out, stl_out)
+        export_stl(text_scad_out, text_stl_out)
+        qr_stl_paths = None
+        if values["qr_code"] != "":
+            export_stl(qr_background_scad_out, qr_background_stl_out)
+            export_stl(qr_dots_scad_out, qr_dots_stl_out)
+            qr_stl_paths = (qr_background_stl_out, qr_dots_stl_out)
+        export_stl(substrate_cut_scad_out, substrate_cut_stl_out)
+        write_3mf(
+            text_stl_out,
+            substrate_cut_stl_out,
+            three_mf_out,
+            values["text_color"],
+            values["substrate_color"],
+            qr_stl_paths,
+        )
+
+    return values
+
+
 def main() -> int:
     args = parse_args()
 
     try:
         raw_values = load_values(args.values)
-        values = normalize_values(raw_values)
-        substrate_model = resolve_substrate_model(args)
-
-        args.out_dir.mkdir(parents=True, exist_ok=True)
-        model_out = args.out_dir / "model.scad"
-        substrate_out = args.out_dir / "substrate.scad"
-        scad_out = args.out_dir / "placard.scad"
-        text_scad_out = args.out_dir / "title-description.scad"
-        qr_background_scad_out = args.out_dir / "qr-background.scad"
-        qr_dots_scad_out = args.out_dir / "qr-dots.scad"
-        substrate_cut_scad_out = args.out_dir / "substrate-cut.scad"
-        stl_out = args.out_dir / "placard.stl"
-        text_stl_out = args.out_dir / "title-description.stl"
-        qr_background_stl_out = args.out_dir / "qr-background.stl"
-        qr_dots_stl_out = args.out_dir / "qr-dots.stl"
-        substrate_cut_stl_out = args.out_dir / "substrate-cut.stl"
-        three_mf_out = args.out_dir / "placard.3mf"
-        qr_outputs = [
-            qr_background_scad_out,
-            qr_dots_scad_out,
-            qr_background_stl_out,
-            qr_dots_stl_out,
-        ]
-
-        copy_model_for_dist(args.model, model_out)
-        shutil.copyfile(substrate_model, substrate_out)
-        write_scad(values, model_out.name, scad_out)
-        write_title_description_scad(values, model_out.name, text_scad_out)
-        if values["qr_code"] != "":
-            write_qr_background_scad(values, model_out.name, qr_background_scad_out)
-            write_qr_dots_scad(values, model_out.name, qr_dots_scad_out)
-        else:
-            unlink_optional_outputs(qr_outputs)
-        write_substrate_cut_scad(values, model_out.name, substrate_cut_scad_out)
-
-        if not args.skip_export:
-            export_stl(scad_out, stl_out)
-            export_stl(text_scad_out, text_stl_out)
-            qr_stl_paths = None
-            if values["qr_code"] != "":
-                export_stl(qr_background_scad_out, qr_background_stl_out)
-                export_stl(qr_dots_scad_out, qr_dots_stl_out)
-                qr_stl_paths = (qr_background_stl_out, qr_dots_stl_out)
-            export_stl(substrate_cut_scad_out, substrate_cut_stl_out)
-            write_3mf(
-                text_stl_out,
-                substrate_cut_stl_out,
-                three_mf_out,
-                values["text_color"],
-                values["substrate_color"],
-                qr_stl_paths,
-            )
+        build_placard(
+            raw_values,
+            args.model,
+            args.out_dir,
+            resolve_substrate_model(args),
+            args.skip_export,
+        )
 
     except (BuildError, OSError, subprocess.CalledProcessError) as exc:
         print(f"error: {exc}", file=sys.stderr)

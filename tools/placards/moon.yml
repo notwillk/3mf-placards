@@ -1,25 +1,37 @@
 $schema: "https://moonrepo.dev/schemas/project.json"
-language: "bash"
+language: "python"
 
 tasks:
   format:
     script: "shfmt -w scripts/*.sh"
   check:
-    script: "shellcheck scripts/*.sh"
+    script: "shellcheck scripts/*.sh && python3 -m py_compile scripts/placards.py && ./scripts/placards.sh validate"
+  list:
+    command: "./scripts/placards.sh"
+    args: ["list"]
+    options:
+      mergeArgs: "replace"
+  validate:
+    command: "./scripts/placards.sh"
+    args: ["validate"]
+    options:
+      mergeArgs: "replace"
   build:
-    script: "./scripts/build.sh"
+    command: "./scripts/placards.sh"
+    args: ["build"]
+    options:
+      mergeArgs: "replace"
     inputs:
       - "moon.yml"
-      - "values.yaml"
       - "scripts/**/*"
-      - "/tools/placards/scripts/**/*"
+      - "/placards/registry/**/*"
       - "/models/placard-title-description/model.scad"
       - "/models/placard-title-description/scripts/**/*"
       - "/models/substrate/model.scad"
       - "/pyproject.toml"
       - "/uv.lock"
     outputs:
-      - "dist/**"
+      - "/dist/placards/**"
   verify:
     deps:
       - "build"
@@ -27,18 +39,23 @@ tasks:
   package:
     deps:
       - "build"
-    script: "./scripts/package.sh"
+    command: "./scripts/placards.sh"
+    args: ["package"]
+    options:
+      mergeArgs: "replace"
     inputs:
       - "moon.yml"
-      - "values.yaml"
       - "scripts/**/*"
-      - "/tools/placards/scripts/**/*"
+      - "/placards/registry/**/*"
       - "/models/placard-title-description/model.scad"
       - "/models/placard-title-description/scripts/**/*"
       - "/models/substrate/model.scad"
       - "/pyproject.toml"
       - "/uv.lock"
     outputs:
-      - "dist/**"
+      - "/dist/placards/**"
   clean:
-    script: "rm -rf dist"
+    command: "./scripts/placards.sh"
+    args: ["clean"]
+    options:
+      mergeArgs: "replace"

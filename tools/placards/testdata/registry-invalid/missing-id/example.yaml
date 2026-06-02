@@ -1,0 +1,4 @@
+model: placard-title-description
+values:
+  title: "Missing ID"
+  description: "This fixture should fail."

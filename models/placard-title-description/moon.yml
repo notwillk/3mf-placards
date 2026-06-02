@@ -11,8 +11,14 @@ tasks:
     outputs:
       - "dist/**"
   verify:
+    deps:
+      - "build"
     script: "checksy --config verify.checksy.yaml check"
   package:
+    deps:
+      - "build"
     script: "./scripts/package.sh"
     outputs:
       - "dist/**"
+  clean:
+    script: "rm -rf dist"

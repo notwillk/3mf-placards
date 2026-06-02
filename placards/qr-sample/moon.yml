@@ -12,6 +12,7 @@ tasks:
       - "moon.yml"
       - "values.yaml"
       - "scripts/**/*"
+      - "/tools/placards/scripts/**/*"
       - "/models/placard-title-description/model.scad"
       - "/models/placard-title-description/scripts/**/*"
       - "/models/substrate/model.scad"
@@ -20,8 +21,24 @@ tasks:
     outputs:
       - "dist/**"
   verify:
+    deps:
+      - "build"
     script: "checksy --config verify.checksy.yaml check"
   package:
+    deps:
+      - "build"
     script: "./scripts/package.sh"
+    inputs:
+      - "moon.yml"
+      - "values.yaml"
+      - "scripts/**/*"
+      - "/tools/placards/scripts/**/*"
+      - "/models/placard-title-description/model.scad"
+      - "/models/placard-title-description/scripts/**/*"
+      - "/models/substrate/model.scad"
+      - "/pyproject.toml"
+      - "/uv.lock"
     outputs:
       - "dist/**"
+  clean:
+    script: "rm -rf dist"

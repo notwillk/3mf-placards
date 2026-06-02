@@ -5,10 +5,18 @@ tasks:
   format:
     script: "shfmt -w scripts/*.sh"
   check:
-    script: "shellcheck scripts/*.sh"
+    script: "shellcheck scripts/*.sh && uv sync --all-extras --locked --check"
   build:
     script: "./scripts/build.sh"
   verify:
+    deps:
+      - "build"
     script: "checksy --config verify.checksy.yaml check"
   package:
+    deps:
+      - "build"
     script: "./scripts/package.sh"
+    outputs:
+      - "dist/**"
+  clean:
+    script: "rm -rf dist"

@@ -1,6 +1,6 @@
 rules:
-  - name: build placard title description model sample
-    check: ./scripts/build.sh && test -f dist/substrate.scad && test -f dist/placard.scad && test -f dist/title-description.scad && test -f dist/substrate-cut.scad && test -s dist/placard.stl && test -s dist/title-description.stl && test -s dist/substrate-cut.stl && test -s dist/placard.3mf
+  - name: placard title description model sample output exists
+    check: test -f dist/substrate.scad && test -f dist/placard.scad && test -f dist/title-description.scad && test -f dist/substrate-cut.scad && test -s dist/placard.stl && test -s dist/title-description.stl && test -s dist/substrate-cut.stl && test -s dist/placard.3mf
   - name: generated scad contains layout defaults
     check: grep -q 'title = "Model Sample"' dist/placard.scad && grep -q 'title_size = 6' dist/placard.scad && grep -q 'title_block_height_factor = 1.25' dist/placard.scad && grep -q 'title_alignment = "center"' dist/placard.scad && grep -q 'description_line_height = 1.25' dist/placard.scad && grep -q 'description_line_spacing = 5' dist/placard.scad && grep -q 'description_text_width = 67' dist/placard.scad && grep -Fq 'description_lines = ["Raised text sample."]' dist/placard.scad && grep -q 'description_alignment = "center"' dist/placard.scad && grep -q 'description_vertical_alignment = "top"' dist/placard.scad && grep -q 'qr_code = ""' dist/placard.scad && grep -q 'qr_module_count = 0' dist/placard.scad && grep -q 'text_color = "#000000"' dist/placard.scad && grep -q 'substrate_color = "#FFFFFF"' dist/placard.scad && grep -q 'placard_title_description_body(' dist/title-description.scad && grep -q 'placard_substrate_cut(' dist/substrate-cut.scad && ! test -e dist/qr-background.scad && ! test -e dist/qr-dots.scad && ! grep -q 'placard_title_description_features(' dist/title-description.scad && ! grep -q 'title_scale' dist/placard.scad
   - name: builder preserves description newlines and trims source lines
@@ -83,11 +83,6 @@ rules:
       PY
   - name: generated qr fixture contains qr objects
     check: |
-      env UV_LINK_MODE="${UV_LINK_MODE:-copy}" uv run --extra qr python3 scripts/build.py \
-        --values qr-values.yaml \
-        --model model.scad \
-        --substrate-model ../substrate/model.scad \
-        --out-dir dist/qr
       test -f dist/qr/qr-background.scad
       test -f dist/qr/qr-dots.scad
       test -s dist/qr/qr-background.stl
@@ -166,5 +161,3 @@ rules:
       assert_triangle_color(by_name["qr-background"], "2")
       assert_triangle_color(by_name["qr-dots"], "3")
       PY
-  - name: package placard title description model sample
-    check: ./scripts/package.sh && test -f dist/model.tgz

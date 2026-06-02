@@ -1,0 +1,4 @@
+id: missing-model
+values:
+  title: "Missing Model"
+  description: "This fixture should fail."

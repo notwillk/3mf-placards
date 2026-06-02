@@ -10,6 +10,19 @@
       "resolved": "ghcr.io/devcontainers/features/docker-outside-of-docker@sha256:c2c2cf829505ead8e4892c88c31b6594ae94a2bbb209e16e1fac456c1a3a624e",
       "integrity": "sha256:c2c2cf829505ead8e4892c88c31b6594ae94a2bbb209e16e1fac456c1a3a624e"
     },
+    "ghcr.io/notwillk/devcontainer-features/codex": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/notwillk/devcontainer-features/codex@sha256:6a14dcea8deb3c0dc0682066d3716de5eefb4bcdc030fb94b095b7b32f471bd0",
+      "integrity": "sha256:6a14dcea8deb3c0dc0682066d3716de5eefb4bcdc030fb94b095b7b32f471bd0",
+      "dependsOn": [
+        "ghcr.io/notwillk/devcontainer-features/node:1"
+      ]
+    },
+    "ghcr.io/notwillk/devcontainer-features/node:1": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/notwillk/devcontainer-features/node@sha256:61578b67777945d792dd1ebfb8260f4e89ee7ff5c4a62d5475a8749ebaa75a65",
+      "integrity": "sha256:61578b67777945d792dd1ebfb8260f4e89ee7ff5c4a62d5475a8749ebaa75a65"
+    },
     "ghcr.io/notwillk/devcontainer-features/openscad-cli:1": {
       "version": "1.0.0",
       "resolved": "ghcr.io/notwillk/devcontainer-features/openscad-cli@sha256:5b811302a702155a90a22595550d015fc983c3c12b689e187cc0e30185b9ad4d",

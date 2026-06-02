@@ -1,0 +1,5 @@
+id: duplicate-id
+model: placard-title-description
+values:
+  title: "Duplicate ID"
+  description: "First fixture."

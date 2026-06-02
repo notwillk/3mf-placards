@@ -6,6 +6,7 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/notwillk/devcontainer-features/codex": {},
     "ghcr.io/notwillk/devcontainer-features/openscad-cli:1": {},
     "ghcr.io/notwillk/devcontainer-features/ssh-server": {
       "port": "22"

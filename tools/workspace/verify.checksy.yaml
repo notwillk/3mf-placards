@@ -1,5 +1,3 @@
 rules:
   - name: workspace scripts exist
-    check: test -x scripts/build.sh && test -x scripts/package.sh
-  - name: workspace package script is idempotent
-    check: ./scripts/package.sh && test -f dist/workspace.txt
+    check: test -x scripts/build.sh && test -x scripts/package.sh && test -x scripts/install.sh && test -x scripts/deep-clean.sh

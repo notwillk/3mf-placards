@@ -1,0 +1,21 @@
+rules:
+  - name: registry validates
+    check: ./scripts/placards.sh validate
+  - name: registry lists sample placards
+    check: ./scripts/placards.sh list | grep -Fx lorem-ipsum && ./scripts/placards.sh list | grep -Fx qr-sample
+  - name: registry validation rejects malformed fixtures
+    check: |
+      ./scripts/placards.sh validate --registry-dir tools/placards/testdata/registry-valid
+      for fixture in tools/placards/testdata/registry-invalid/*; do
+        if ./scripts/placards.sh validate --registry-dir "$fixture"; then
+          echo "expected validation failure for $fixture" >&2
+          exit 1
+        fi
+      done
+  - name: registry build outputs exist
+    check: |
+      ./scripts/placards.sh verify
+      test -s ../../dist/placards/lorem-ipsum/placard.3mf
+      test -s ../../dist/placards/qr-sample/placard.3mf
+      test -s ../../dist/placards/qr-sample/qr-background.stl
+      test -s ../../dist/placards/qr-sample/qr-dots.stl

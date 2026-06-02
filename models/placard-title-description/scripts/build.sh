@@ -16,3 +16,9 @@ fi
 	--model "$PROJECT_DIR/model.scad" \
 	--substrate-model "$WORKSPACE_DIR/models/substrate/model.scad" \
 	--out-dir "$PROJECT_DIR/dist"
+
+"${RUNNER[@]}" \
+	--values "$PROJECT_DIR/qr-values.yaml" \
+	--model "$PROJECT_DIR/model.scad" \
+	--substrate-model "$WORKSPACE_DIR/models/substrate/model.scad" \
+	--out-dir "$PROJECT_DIR/dist/qr"

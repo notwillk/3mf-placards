@@ -3,5 +3,9 @@ rules:
     check: test -d models && test -d placards && test -d tools
   - name: moon workspace config exists
     check: test -f .moon/workspace.yml && test -f .moon/tasks.yml
+  - name: architecture docs exist
+    check: test -f docs/architecture.md
+  - name: placard registry exists
+    check: test -d placards/registry && test -f tools/placards/scripts/placards.py
   - name: checksy workflow skill is vendored
     check: test -f .agents/skills/checksy-workflow/SKILL.md

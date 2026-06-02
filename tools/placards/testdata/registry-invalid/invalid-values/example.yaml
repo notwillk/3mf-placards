@@ -1,0 +1,5 @@
+id: invalid-values
+model: placard-title-description
+values:
+  title: ""
+  description: "The builder requires a non-empty title."

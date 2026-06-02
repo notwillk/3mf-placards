@@ -1,6 +1,10 @@
 $schema: "https://moonrepo.dev/schemas/tasks.json"
 
 tasks:
+  install:
+    command: "tools/workspace/scripts/install.sh"
+    options:
+      runFromWorkspaceRoot: true
   format:
     command: "moon"
     args: ["run", "*:format"]
@@ -16,3 +20,10 @@ tasks:
   package:
     command: "moon"
     args: ["run", "*:package"]
+  clean:
+    command: "moon"
+    args: ["run", "*:clean"]
+  deep-clean:
+    command: "tools/workspace/scripts/deep-clean.sh"
+    options:
+      runFromWorkspaceRoot: true

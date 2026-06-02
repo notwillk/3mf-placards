@@ -1,4 +1,5 @@
 .checksy-cache/
+dist/
 **/dist/
 .venv/
 __pycache__/

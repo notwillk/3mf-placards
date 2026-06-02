@@ -1,0 +1,25 @@
+id: qr-sample
+model: placard-title-description
+values:
+  title: "JOIN THE WIFI"
+  description: "SSID: MyNetwork\nsupersecret"
+  qr_code: "WIFI:T:WPA;S:MyNetwork;P:supersecret;;"
+  width: 75
+  aspect_ratio: 2
+  thickness: 2
+  backing_thickness: 0.4
+  border_thickness: 2
+  border_radius: 5
+  orientation: "landscape"
+  padding: 2
+  gap: 1
+  title_typeface: ""
+  title_size: 4
+  title_alignment: "left"
+  description_typeface: ""
+  description_size: 2
+  description_line_height: 1.25
+  description_alignment: "left"
+  description_vertical_alignment: "bottom"
+  text_color: "#000000"
+  substrate_color: "#CCCCCC"

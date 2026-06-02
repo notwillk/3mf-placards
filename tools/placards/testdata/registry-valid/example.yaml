@@ -1,0 +1,5 @@
+id: fixture-example
+model: placard-title-description
+values:
+  title: "Fixture Example"
+  description: "Valid registry entry."

@@ -1,7 +1,5 @@
 rules:
-  - name: build substrate model sample
-    check: ./scripts/build.sh && test -f dist/substrate.scad && test -s dist/substrate.stl
+  - name: substrate model sample output exists
+    check: test -f dist/substrate.scad && test -s dist/substrate.stl
   - name: generated scad contains substrate defaults
     check: grep -q 'width = 75' dist/substrate.scad && grep -q 'border_radius = 5' dist/substrate.scad
-  - name: package substrate model sample
-    check: ./scripts/package.sh && test -f dist/model.tgz

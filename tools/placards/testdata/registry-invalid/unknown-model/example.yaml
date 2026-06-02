@@ -1,0 +1,5 @@
+id: unknown-model
+model: unknown-model
+values:
+  title: "Unknown Model"
+  description: "This fixture should fail."
